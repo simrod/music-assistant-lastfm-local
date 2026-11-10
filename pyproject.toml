@@ -1,0 +1,24 @@
+[project]
+name = "music-assistant-lastfm-local"
+version = "0.1.0"
+description = "Music Assistant metadata provider: Last.fm top tracks for a local library."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["lastfm_local", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]

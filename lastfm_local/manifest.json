@@ -1,0 +1,16 @@
+{
+  "type": "metadata",
+  "domain": "lastfm_local",
+  "name": "Last.fm Local Top Tracks",
+  "description": "Artist top tracks for your local library, ranked by Last.fm's global popularity. No streaming service required.",
+  "codeowners": ["@sfurman"],
+  "stage": "experimental",
+  "requirements": [],
+  "documentation": "https://www.last.fm/api/account/create",
+  "multi_instance": false,
+  "builtin": false,
+  "icon": "chart-bar",
+  "credits": [
+    "Chart data from [Last.fm](https://www.last.fm/api). This provider does not scrobble."
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "manifest": {
+    "name": "Last.fm Local Top Tracks",
+    "description": "Artist top tracks for your local library, ranked by Last.fm's global popularity. No streaming service required."
+  },
+  "config_entries": {
+    "api_key": {
+      "label": "Last.fm API key",
+      "description": "A Last.fm API key with read access. Leave empty on an official Music Assistant build to use its built-in key. Create a key at https://www.last.fm/api/account/create. No shared secret is used."
+    },
+    "chart_refresh_days": {
+      "label": "Chart refresh (days)",
+      "description": "Days to keep using a saved Last.fm chart before asking again. 42 days is 6 weeks. If Last.fm is unreachable, the last saved chart is still used."
+    }
+  }
+}

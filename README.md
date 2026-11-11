@@ -19,11 +19,11 @@ For each call:
 
 ## Playing the chart
 
-On an artist page, **Play all** on the Top Tracks row queues the whole chart in that order. The play button on a track queues that track and every chart track after it, including tracks past the ones on screen. The row shows 9 tracks on a wide screen and 5 on a phone. The queue gets the rest of the chart as well.
+On an artist page, **Play all** is the first control in the Top tracks heading. It queues the whole chart in chart order. The section can be collapsed; Play all opens it and then queues the chart. The play control on a track queues from that track through the end of the chart, including tracks that are not on screen. The track menu queues that one track. These chart plays turn shuffle off so the order stays the chart order.
 
-The track menu queues that one track. These chart plays turn shuffle off so the order stays the chart order.
+The heading is the toolbar title "Top tracks". The script matches the names on screen to the chart the page loaded, in any order. A row of newest library tracks does not match, and it keeps the one-track play control.
 
-Music Assistant loads this when the provider starts. It writes a small script into the web app and reloads of that app pick it up, so reload the page after the first start. A later Music Assistant update replaces the web app, and the next provider start writes the script again. The log line `Top Tracks play control is installed` means the write succeeded. Diagnostics include `play_control_installed`.
+The image copies the play script into the web app, because the web server only serves files that exist there when the process starts. When the provider starts it writes that file again and adds it to the page. Reload after the log line `Top Tracks play control is installed`. Diagnostics include `play_control_installed`. A later Music Assistant update replaces the web app until the image is rebuilt and the provider starts again.
 
 When Last.fm returns no chart, Music Assistant fills the row with that artist's newest library tracks. That fallback row keeps the one-track play button. If the web app directory cannot be written, the Top Tracks row keeps it too, and the provider still loads.
 
@@ -70,7 +70,7 @@ Start it with:
 docker compose up -d --build
 ```
 
-That clones or reads this repo, pulls the official image, and copies the provider in. The existing `/data` directory keeps the library. Then add **Last.fm Local Top Tracks** under Settings, Metadata Providers. The provider is not enabled just because the image contains it. After it starts, reload the web app so the Top Tracks row picks up Play all.
+That clones or reads this repo, pulls the official image, and copies the provider in. It also places the play script where the web server can serve it. The existing `/data` directory keeps the library. Then add **Last.fm Local Top Tracks** under Settings, Metadata Providers. The provider is not enabled just because the image contains it. After it starts, reload the web app so the Top Tracks row picks up Play all.
 
 A public GitHub repo needs no credentials. A private repo has to be cloneable from the Docker host. To pick up a newer Music Assistant release or a newer commit of this provider, run `docker compose build --pull` and then `docker compose up -d`. Change the `FROM` line to a fixed tag, such as `ghcr.io/music-assistant/server:2.10.0`, when `latest` is not what you want.
 

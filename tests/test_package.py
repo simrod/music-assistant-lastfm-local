@@ -23,9 +23,12 @@ def test_package_import_does_not_pull_in_music_assistant() -> None:
 
 
 def test_provider_module_is_the_only_music_assistant_import() -> None:
-    """matching.py and lastfm.py stay free of the server, so pytest needs no server checkout."""
+    """matching.py, lastfm.py, and play.py stay free of the server.
+
+    pytest needs no server checkout.
+    """
     root = Path(__file__).parents[1] / "lastfm_local"
-    for path in (root / "matching.py", root / "lastfm.py", root / "__init__.py"):
+    for path in (root / "matching.py", root / "lastfm.py", root / "play.py", root / "__init__.py"):
         tree = ast.parse(path.read_text())
         imported = {
             alias.name

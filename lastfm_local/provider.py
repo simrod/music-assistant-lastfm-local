@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from music_assistant.models.metadata_provider import MetadataProvider
@@ -24,6 +25,7 @@ from .matching import (
     stored_chart_is_fresh,
     unpack_stored_chart,
 )
+from .play import install_into_frontend
 
 if TYPE_CHECKING:
     from music_assistant.mass import MusicAssistant
@@ -113,6 +115,7 @@ class LastFmLocalProvider(MetadataProvider):
     ) -> None:
         super().__init__(mass, manifest, config, supported_features)
         self._client: LastFmClient | None = None
+        self._play_control_installed = False
 
     async def get_config_entries(self) -> tuple[ConfigEntry, ...]:
         """Return the provider options. Labels are inlined for out-of-tree installs.
@@ -133,6 +136,7 @@ class LastFmLocalProvider(MetadataProvider):
                 f"Create one at {_API_KEY_HELP} and set it on this provider."
             )
         self._client = LastFmClient(self.mass.http_session, api_key)
+        self._play_control_installed = self._install_play_control()
         try:
             await self._client.ping()
         except LastFmError as err:
@@ -183,7 +187,36 @@ class LastFmLocalProvider(MetadataProvider):
             "api_key_configured": bool(self._api_key()),
             "uses_bundled_key": not own_key and bool(bundled_lastfm_api_key()),
             "chart_refresh_days": self._chart_refresh_days(),
+            "play_control_installed": self._play_control_installed,
         }
+
+    def _install_play_control(self) -> bool:
+        """Add Play all and play-from-here on the artist Top Tracks row.
+
+        The web app plays one track from that row. The script queues the chart
+        from the chosen track. A failure here leaves that one-track play in
+        place and does not stop the provider from loading.
+        """
+        try:
+            from music_assistant_frontend import where
+        except Exception as err:
+            self.logger.warning("Top tracks play control was not added: %s", err)
+            return False
+        script_path = Path(__file__).with_name("toptracks_play.js")
+        try:
+            install_into_frontend(where(), script_path.read_text(encoding="utf-8"))
+        except Exception as err:
+            self.logger.warning(
+                "Top tracks play control was not added to the web app: %s. "
+                "The Top Tracks row plays one track at a time.",
+                err,
+            )
+            return False
+        self.logger.info(
+            "Top Tracks play control is installed. Reload the web app, then Play all "
+            "or a track's play button queues the chart from that point."
+        )
+        return True
 
     def _api_key(self) -> str:
         configured = self.config.get_value(CONF_API_KEY)

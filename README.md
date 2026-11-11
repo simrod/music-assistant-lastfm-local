@@ -17,6 +17,16 @@ For each call:
 3. Walk the chart from most played to least. Keep the first library copy of each title, preferring the plain recording over a live, demo, or remix version. A live copy is used when it is the only one, or when the chart title itself is live.
 4. Drop chart titles that are not in the library.
 
+## Playing the chart
+
+On an artist page, **Play all** on the Top Tracks row queues the whole chart in that order. The play button on a track queues that track and every chart track after it, including tracks past the ones on screen. The row shows 9 tracks on a wide screen and 5 on a phone. The queue gets the rest of the chart as well.
+
+The track menu queues that one track. These chart plays turn shuffle off so the order stays the chart order.
+
+Music Assistant loads this when the provider starts. It writes a small script into the web app and reloads of that app pick it up, so reload the page after the first start. A later Music Assistant update replaces the web app, and the next provider start writes the script again. The log line `Top Tracks play control is installed` means the write succeeded. Diagnostics include `play_control_installed`.
+
+When Last.fm returns no chart, Music Assistant fills the row with that artist's newest library tracks. That fallback row keeps the one-track play button. If the web app directory cannot be written, the Top Tracks row keeps it too, and the provider still loads.
+
 ## Install
 
 The provider folder must be named `lastfm_local`. Music Assistant loads `music_assistant.providers.lastfm_local`.
@@ -60,7 +70,7 @@ Start it with:
 docker compose up -d --build
 ```
 
-That clones or reads this repo, pulls the official image, and copies the provider in. The existing `/data` directory keeps the library. Then add **Last.fm Local Top Tracks** under Settings, Metadata Providers. The provider is not enabled just because the image contains it.
+That clones or reads this repo, pulls the official image, and copies the provider in. The existing `/data` directory keeps the library. Then add **Last.fm Local Top Tracks** under Settings, Metadata Providers. The provider is not enabled just because the image contains it. After it starts, reload the web app so the Top Tracks row picks up Play all.
 
 A public GitHub repo needs no credentials. A private repo has to be cloneable from the Docker host. To pick up a newer Music Assistant release or a newer commit of this provider, run `docker compose build --pull` and then `docker compose up -d`. Change the `FROM` line to a fixed tag, such as `ghcr.io/music-assistant/server:2.10.0`, when `latest` is not what you want.
 

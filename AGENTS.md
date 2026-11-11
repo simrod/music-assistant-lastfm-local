@@ -9,9 +9,10 @@ Metadata provider for Music Assistant. It fills Artist Top Tracks for a local li
 - Do not resolve through streaming providers. `music_assistant.providers.lastfm_recommendations` already does that, and it is empty for a library that has no streaming source.
 - Declare `ProviderFeature.ARTIST_TOPTRACKS` only. Do not add `LIBRARY_*` or `SEARCH`. This is not a music source.
 - The directory name, the manifest `domain`, and the package name stay `lastfm_local`. Music Assistant imports `music_assistant.providers.<directory>`.
-- `matching.py` and `lastfm.py` do not import `music_assistant` or `music_assistant_models`. `tests/test_package.py` locks that. `provider.py` is the only server module.
+- `matching.py`, `lastfm.py`, and `play.py` do not import `music_assistant` or `music_assistant_models`. `tests/test_package.py` locks that. `provider.py` is the only server module.
 - Importing `lastfm_local` must not import Music Assistant. `setup` imports `provider.py` lazily.
-- Never log the API key. Diagnostics report whether a key is set and the chart refresh interval, never the key.
+- Never log the API key. Diagnostics report whether a key is set, the chart refresh interval, and whether the play control was written, never the key.
+- The play control is best-effort. A failure to write it must not unload the provider and must not change `get_artist_toptracks`.
 
 ## Where Music Assistant calls this
 
@@ -23,6 +24,12 @@ Music Assistant caches the assembled listing (`cached_listing` in the media cont
 
 `strings.json` is compiled into the server catalog by `scripts/build_translations.py` only for in-tree providers. Config entries also set `label` and `description` so a copy dropped into `custom_providers` still has text. `ConfigEntry.__post_serialize__` keeps those values when no translation matches.
 
+## Playing the chart
+
+The artist page queues one track from Top Tracks. On startup the provider copies `toptracks_play.js` into the directory `music_assistant_frontend.where()` returns and inserts a classic script tag ahead of the app module in `index.html`. The script wraps `WebSocket` before the app's sendspin interceptor captures it, remembers `music/artists/top_tracks` results, and rewrites the next `player_queues/play_media` for a play button in `.artist-top-tracks` so the payload is the chart from that row through the end, with shuffle off.
+
+The visible rows are a prefix of that response (9 on a wide screen, 5 on a phone). The script checks the visible `.artist-top-tracks__name` text against the stored response before it rewrites, so a row filled with newest library tracks is left alone. The classes it looks up are `artist-top-tracks`, `artist-top-tracks__head`, `artist-top-tracks__track`, `artist-top-tracks__name`, `artist-top-tracks__menu`, and `artist-top-tracks__more`. A web app that renames those classes keeps the one-track play button.
+
 ## Files
 
 | Path | Role |
@@ -32,7 +39,9 @@ Music Assistant caches the assembled listing (`cached_listing` in the media cont
 | `lastfm_local/provider.py` | `LastFmLocalProvider`, config, cache, library lookup |
 | `lastfm_local/lastfm.py` | HTTP client and `artist.getTopTracks` parsing |
 | `lastfm_local/matching.py` | `title_key`, `score_pair`, `match_chart_to_library`, saved-chart envelope |
-| `tests/` | Parser, matcher, import boundary |
+| `lastfm_local/play.py` | Copy `toptracks_play.js` into the web app and patch `index.html` |
+| `lastfm_local/toptracks_play.js` | Browser script: queue the chart from a Top Tracks play button |
+| `tests/` | Parser, matcher, play control, import boundary |
 
 ## Matching rules
 

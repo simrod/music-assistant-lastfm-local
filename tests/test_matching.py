@@ -3,6 +3,8 @@
 from lastfm_local.matching import (
     ChartTrack,
     LibraryTrackRef,
+    dedupe_chart_enabled,
+    dedupe_chart_tracks,
     match_chart_to_library,
     title_key,
 )
@@ -72,6 +74,41 @@ def test_studio_copy_beats_live_unless_the_chart_row_is_live() -> None:
 def test_live_copy_is_used_when_it_is_the_only_one() -> None:
     library = [_lib("live", "Creep", version="Live at the BBC")]
     assert match_chart_to_library([_chart("Creep")], library, limit=5) == ["live"]
+
+
+def test_dedupe_collapses_case_and_remaster_and_keeps_a_live_row() -> None:
+    chart = [
+        _chart("Creep - 2011 Remaster", rank=2),
+        _chart("CREEP", rank=1),
+        _chart("Creep", rank=0),
+        _chart("Creep (Live)", rank=3),
+        _chart("CREEP (Live at the BBC)", rank=4),
+        _chart("Karma Police", rank=5),
+    ]
+    original = list(chart)
+    deduped = dedupe_chart_tracks(chart)
+    assert chart == original
+    assert [track.title for track in deduped] == ["Creep", "Creep (Live)", "Karma Police"]
+
+
+def test_dedupe_collapses_compact_titles() -> None:
+    chart = [_chart("R.E.M.", rank=0), _chart("REM", rank=1)]
+    assert [track.title for track in dedupe_chart_tracks(chart)] == ["R.E.M."]
+
+
+def test_dedupe_then_match_plays_one_file_when_two_copies_exist() -> None:
+    chart = dedupe_chart_tracks([_chart("Creep", rank=0), _chart("CREEP", rank=1)])
+    library = [_lib("lower", "Creep"), _lib("upper", "CREEP")]
+    assert match_chart_to_library(chart, library, limit=25) == ["lower"]
+
+
+def test_dedupe_switch_defaults_on() -> None:
+    assert dedupe_chart_enabled(None) is True
+    assert dedupe_chart_enabled(True) is True
+    assert dedupe_chart_enabled("on") is True
+    assert dedupe_chart_enabled(False) is False
+    assert dedupe_chart_enabled(0) is False
+    assert dedupe_chart_enabled("false") is False
 
 
 def test_same_library_track_is_not_returned_twice() -> None:

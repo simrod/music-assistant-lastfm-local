@@ -82,6 +82,8 @@ On an official Music Assistant build the provider uses the server's built-in key
 
 Chart refresh is how many days a saved chart is reused before Last.fm is asked again. The default is 42 days (6 weeks). After that, a failure or an empty response still leaves a saved chart that has tracks in place.
 
+**Collapse duplicate songs** is on by default. After a chart is loaded, the highest-ranked row of each song is kept. Case, punctuation, featuring credits, and a remaster label count as the same song, so two library files of that song become one row. A live, remix, or acoustic listing stays. The saved chart is left as Last.fm returned it, and turning the switch off uses that full list on the next artist page.
+
 **Clear saved charts** on the same settings page deletes every saved chart for this provider. The next artist page asks Last.fm again. Library tracks stay. The button is on the provider's own settings, under Settings, Metadata Providers.
 
 ## Tests

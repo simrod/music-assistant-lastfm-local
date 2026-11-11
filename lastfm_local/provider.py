@@ -19,6 +19,8 @@ from .matching import (
     ChartTrack,
     LibraryTrackRef,
     chart_refresh_days,
+    dedupe_chart_enabled,
+    dedupe_chart_tracks,
     empty_chart_replaces,
     match_chart_to_library,
     pack_stored_chart,
@@ -34,6 +36,7 @@ if TYPE_CHECKING:
 
 CONF_API_KEY = "api_key"
 CONF_CHART_REFRESH_DAYS = "chart_refresh_days"
+CONF_DEDUPE_CHART = "dedupe_chart"
 CONF_CLEAR_CHARTS = "clear_charts"
 CHART_CACHE_CATEGORY = 1
 # Longer than any refresh interval, so raising the setting still finds the row,
@@ -104,6 +107,23 @@ def _chart_refresh_entry() -> ConfigEntry:
     )
 
 
+def _dedupe_chart_entry() -> ConfigEntry:
+    return ConfigEntry(
+        key=CONF_DEDUPE_CHART,
+        type=ConfigEntryType.BOOLEAN,
+        default_value=True,
+        required=False,
+        label="Collapse duplicate songs",
+        description=(
+            "After a chart is loaded, keep the highest-ranked row of each song. "
+            "Case, punctuation, featuring credits, and a remaster label count as "
+            "the same song. A live, remix, or acoustic listing stays. "
+            "The saved chart is left as Last.fm returned it."
+        ),
+        category="generic",
+    )
+
+
 def _clear_charts_entry() -> ConfigEntry:
     return ConfigEntry(
         key=CONF_CLEAR_CHARTS,
@@ -141,7 +161,12 @@ class LastFmLocalProvider(MetadataProvider):
         A provider dropped into ``custom_providers`` never gets that compile
         step, so each entry also carries its own label and description.
         """
-        return (_api_key_entry(), _chart_refresh_entry(), _clear_charts_entry())
+        return (
+            _api_key_entry(),
+            _chart_refresh_entry(),
+            _dedupe_chart_entry(),
+            _clear_charts_entry(),
+        )
 
     async def handle_config_action(
         self, action: str
@@ -194,7 +219,7 @@ class LastFmLocalProvider(MetadataProvider):
         library_tracks = await self._library_tracks(artist)
         if not library_tracks:
             return []
-        chart = await self._chart(artist, limit)
+        chart = self._dedupe_chart(await self._chart(artist, limit))
         if not chart:
             return []
 
@@ -215,7 +240,7 @@ class LastFmLocalProvider(MetadataProvider):
         self, artist: Artist, limit: int = DEFAULT_LIMIT
     ) -> list[str]:
         """Return chart titles, including ones this library does not have."""
-        chart = await self._chart(artist, limit)
+        chart = self._dedupe_chart(await self._chart(artist, limit))
         return [track.title for track in chart][:limit]
 
     async def get_diagnostics(self) -> dict[str, Any]:
@@ -225,6 +250,7 @@ class LastFmLocalProvider(MetadataProvider):
             "api_key_configured": bool(self._api_key()),
             "uses_bundled_key": not own_key and bool(bundled_lastfm_api_key()),
             "chart_refresh_days": self._chart_refresh_days(),
+            "dedupe_chart": dedupe_chart_enabled(self.config.get_value(CONF_DEDUPE_CHART)),
             "play_control_installed": self._play_control_installed,
         }
 
@@ -264,6 +290,16 @@ class LastFmLocalProvider(MetadataProvider):
 
     def _chart_refresh_days(self) -> int:
         return chart_refresh_days(self.config.get_value(CONF_CHART_REFRESH_DAYS))
+
+    def _dedupe_chart(self, chart: list[ChartTrack]) -> list[ChartTrack]:
+        """Collapse duplicate songs when the settings switch is on.
+
+        The saved chart is not rewritten. Turning the switch off uses the
+        stored list on the next artist page.
+        """
+        if not dedupe_chart_enabled(self.config.get_value(CONF_DEDUPE_CHART)):
+            return chart
+        return dedupe_chart_tracks(chart)
 
     async def _library_tracks(self, artist: Artist) -> list[Track]:
         artists = getattr(getattr(self.mass, "music", None), "artists", None)

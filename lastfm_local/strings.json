@@ -12,6 +12,10 @@
       "label": "Chart refresh (days)",
       "description": "Days to keep using a saved Last.fm chart before asking again. 42 days is 6 weeks. If Last.fm is unreachable, the last saved chart is still used."
     },
+    "dedupe_chart": {
+      "label": "Collapse duplicate songs",
+      "description": "After a chart is loaded, keep the highest-ranked row of each song. Case, punctuation, featuring credits, and a remaster label count as the same song. A live, remix, or acoustic listing stays. The saved chart is left as Last.fm returned it."
+    },
     "clear_charts": {
       "label": "Clear saved charts",
       "description": "Delete every saved Last.fm chart for this provider. The next artist page asks Last.fm again. Library tracks stay.",

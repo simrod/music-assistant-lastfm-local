@@ -11,7 +11,7 @@ Metadata provider for Music Assistant. It fills Artist Top Tracks for a local li
 - The directory name, the manifest `domain`, and the package name stay `lastfm_local`. Music Assistant imports `music_assistant.providers.<directory>`.
 - `matching.py`, `lastfm.py`, and `play.py` do not import `music_assistant` or `music_assistant_models`. `tests/test_package.py` locks that. `provider.py` is the only server module.
 - Importing `lastfm_local` must not import Music Assistant. `setup` imports `provider.py` lazily.
-- Never log the API key. Diagnostics report whether a key is set, the chart refresh interval, and whether the play control was written, never the key.
+- Never log the API key. Diagnostics report whether a key is set, the chart refresh interval, whether duplicate songs are collapsed, and whether the play control was written, never the key.
 - The play control is best-effort. A failure to write it must not unload the provider and must not change `get_artist_toptracks`.
 
 ## Where Music Assistant calls this
@@ -20,7 +20,7 @@ Metadata provider for Music Assistant. It fills Artist Top Tracks for a local li
 
 The controller's default limit is 25 and it does not pass that argument. Honor the `limit` parameter.
 
-Music Assistant caches the assembled listing (`cached_listing` in the media controller). This provider reads its own saved chart first. The chart is kept in Music Assistant's cache as `{"fetched_at", "tracks"}`, keyed by artist and limit. While `fetched_at` is inside `chart_refresh_days` (default 42), Last.fm is not called. When the chart is missing or older than that, Last.fm is asked. A response with tracks replaces the saved chart. An empty response does not replace a chart that has tracks, and a failure is not stored: the saved chart is returned, or an empty list when there is none. The row is written with a 365-day expiration, `allow_expired_cache`, and `persistent`, so it outlives the refresh interval and a general cache clear. Each assembly rematches the chart against the current library. The settings action `clear_charts` deletes this instance's rows in category `1` through `cache.delete`, which matches the instance id exactly and includes persistent rows. It does not remove library tracks.
+Music Assistant caches the assembled listing (`cached_listing` in the media controller). This provider reads its own saved chart first. The chart is kept in Music Assistant's cache as `{"fetched_at", "tracks"}`, keyed by artist and limit. While `fetched_at` is inside `chart_refresh_days` (default 42), Last.fm is not called. When the chart is missing or older than that, Last.fm is asked. A response with tracks replaces the saved chart. An empty response does not replace a chart that has tracks, and a failure is not stored: the saved chart is returned, or an empty list when there is none. The row is written with a 365-day expiration, `allow_expired_cache`, and `persistent`, so it outlives the refresh interval and a general cache clear. Each assembly rematches the chart against the current library. When `dedupe_chart` is on (the default), that assembly first drops a later row whose song identity matches an earlier, higher-ranked row. Identity is `title_key` plus `noise_flags`, so case, punctuation, featuring credits, and a remaster label collapse, and a live, remix, or acoustic row stays. The saved chart is not rewritten. The switch is read on each call. The settings action `clear_charts` deletes this instance's rows in category `1` through `cache.delete`, which matches the instance id exactly and includes persistent rows. It does not remove library tracks.
 
 `strings.json` is compiled into the server catalog by `scripts/build_translations.py` only for in-tree providers. Config entries also set `label` and `description` so a copy dropped into `custom_providers` still has text. `ConfigEntry.__post_serialize__` keeps those values when no translation matches.
 
@@ -50,6 +50,8 @@ The artist page queues one track from Top Tracks. Frontend 2.17 draws that as a 
 `score_pair` returns `None` when the title differs and the MusicBrainz recording ids differ or are missing. Equal recording ids are a strong match. Unequal recording ids do not reject a title match, because a remaster is a different recording of the same song.
 
 Version tags in `noise_flags` (live, demo, remix, and the rest of that table) cost points when the chart row did not ask for them. The plain copy wins. The tagged copy still wins when it is the only copy, or when the chart title carries the same tag. Duration is a tie break, not an identity.
+
+`dedupe_chart_tracks` runs before matching when the settings switch is on. It keeps the best-ranked row for each `title_key` and noise-tag set. Matching then picks one library file for each remaining row.
 
 ## Extending
 

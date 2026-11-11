@@ -215,6 +215,41 @@ def noise_flags(text: str) -> frozenset[str]:
     return frozenset(name for name, pattern in _NOISE_PATTERNS if pattern.search(text))
 
 
+def dedupe_chart_enabled(value: object) -> bool:
+    """Return whether duplicate songs are collapsed. A missing value stays on."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int):
+        return value != 0
+    if isinstance(value, str):
+        text = value.strip().casefold()
+        if text in {"0", "false", "off", "no"}:
+            return False
+        if text in {"1", "true", "on", "yes"}:
+            return True
+    return True
+
+
+def dedupe_chart_tracks(chart: list[ChartTrack]) -> list[ChartTrack]:
+    """Drop a later row that is the same song as an earlier, higher-ranked row.
+
+    The song identity is :func:`title_key` plus the noise tags on the title.
+    Case, punctuation, featuring credits, and a remaster label collapse.
+    A live, remix, or acoustic row stays, because those tags are a different
+    performance. The caller's list is left unchanged.
+    """
+    kept: list[ChartTrack] = []
+    for track in sorted(chart, key=lambda item: item.rank):
+        flags = noise_flags(track.title)
+        if any(
+            flags == noise_flags(earlier.title) and _titles_match(track.title, earlier.title)
+            for earlier in kept
+        ):
+            continue
+        kept.append(track)
+    return kept
+
+
 def _titles_match(chart_title: str, library_title: str) -> bool:
     chart_key = title_key(chart_title)
     library_key = title_key(library_title)

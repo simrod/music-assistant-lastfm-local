@@ -3,7 +3,7 @@ name = "music-assistant-lastfm-local"
 version = "0.1.0"
 description = "Music Assistant metadata provider: Last.fm top tracks for a local library."
 readme = "README.md"
-license = "MIT"
+license = "Apache-2.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = []

@@ -94,7 +94,7 @@ python -m pytest
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+Apache License 2.0, the same license as [Music Assistant server](https://github.com/music-assistant/server). Copyright 2026 Simrod Furman. See [LICENSE](LICENSE).
 
 ## Layout
 

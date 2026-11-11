@@ -11,6 +11,11 @@
     "chart_refresh_days": {
       "label": "Chart refresh (days)",
       "description": "Days to keep using a saved Last.fm chart before asking again. 42 days is 6 weeks. If Last.fm is unreachable, the last saved chart is still used."
+    },
+    "clear_charts": {
+      "label": "Clear saved charts",
+      "description": "Delete every saved Last.fm chart for this provider. The next artist page asks Last.fm again. Library tracks stay.",
+      "action_label": "Clear saved charts"
     }
   }
 }

@@ -82,6 +82,8 @@ On an official Music Assistant build the provider uses the server's built-in key
 
 Chart refresh is how many days a saved chart is reused before Last.fm is asked again. The default is 42 days (6 weeks). After that, a failure or an empty response still leaves a saved chart that has tracks in place.
 
+**Clear saved charts** on the same settings page deletes every saved chart for this provider. The next artist page asks Last.fm again. Library tracks stay. The button is on the provider's own settings, under Settings, Metadata Providers.
+
 ## Tests
 
 The chart parser and the matcher do not import Music Assistant.

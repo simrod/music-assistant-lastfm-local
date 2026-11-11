@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from music_assistant.models.metadata_provider import MetadataProvider
-from music_assistant_models.config_entries import ConfigEntry
+from music_assistant_models.config_entries import ConfigActionResult, ConfigEntry
 from music_assistant_models.enums import ConfigEntryType, ExternalID, ProviderFeature
 from music_assistant_models.errors import AuthenticationFailed
 
@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 
 CONF_API_KEY = "api_key"
 CONF_CHART_REFRESH_DAYS = "chart_refresh_days"
+CONF_CLEAR_CHARTS = "clear_charts"
 CHART_CACHE_CATEGORY = 1
 # Longer than any refresh interval, so raising the setting still finds the row,
 # and an outage can serve it after the interval has elapsed. Cleanup keeps an
@@ -103,6 +104,21 @@ def _chart_refresh_entry() -> ConfigEntry:
     )
 
 
+def _clear_charts_entry() -> ConfigEntry:
+    return ConfigEntry(
+        key=CONF_CLEAR_CHARTS,
+        type=ConfigEntryType.ACTION,
+        label="Clear saved charts",
+        description=(
+            "Delete every saved Last.fm chart for this provider. "
+            "The next artist page asks Last.fm again. Library tracks stay."
+        ),
+        action=CONF_CLEAR_CHARTS,
+        action_label="Clear saved charts",
+        category="generic",
+    )
+
+
 class LastFmLocalProvider(MetadataProvider):
     """Artist top tracks from Last.fm, resolved only to in-library tracks."""
 
@@ -125,7 +141,29 @@ class LastFmLocalProvider(MetadataProvider):
         A provider dropped into ``custom_providers`` never gets that compile
         step, so each entry also carries its own label and description.
         """
-        return (_api_key_entry(), _chart_refresh_entry())
+        return (_api_key_entry(), _chart_refresh_entry(), _clear_charts_entry())
+
+    async def handle_config_action(
+        self, action: str
+    ) -> tuple[ConfigEntry, ...] | ConfigActionResult | None:
+        """Delete this provider's saved charts when the settings button is pressed."""
+        if action != CONF_CLEAR_CHARTS:
+            return await super().handle_config_action(action)
+        # delete() matches the provider id exactly and includes persistent rows.
+        # cache.clear() skips persistent rows unless asked, and matches the id
+        # with a substring.
+        await self.mass.cache.delete(
+            None,
+            category=CHART_CACHE_CATEGORY,
+            provider=self.instance_id,
+        )
+        self.logger.info("Cleared saved Last.fm charts")
+        return ConfigActionResult(
+            message=(
+                "Saved Last.fm charts were cleared. "
+                "Open an artist again to fetch a new chart."
+            )
+        )
 
     async def handle_async_init(self) -> None:
         """Reject a missing key, and a key Last.fm itself refuses."""

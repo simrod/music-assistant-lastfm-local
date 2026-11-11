@@ -7,6 +7,7 @@ const {
   createTopTracksSession,
   mediaUri,
   rewritePlayArgs,
+  rewritePlayAllArgs,
   TOP_TRACKS,
   PLAY_MEDIA,
 } = require("../lastfm_local/toptracks_play.js");
@@ -87,5 +88,38 @@ assert.equal(
 );
 assert.equal(rewritePlayArgs({ media: "library://track/3" }, ["library://track/3"]), null);
 assert.equal(rewritePlayArgs({ media: { uri: "library://track/2" } }, null), null);
+
+const chartUris = ["library://track/1", "library://track/2", "library://track/3"];
+const playAll = rewritePlayAllArgs(
+  {
+    queue_id: "player.room",
+    media: { uri: "library://track/2", name: "Creep" },
+    option: "play",
+    start_item: "library://track/2",
+    shuffle: true,
+  },
+  chartUris,
+);
+assert.deepEqual(playAll.media, chartUris);
+assert.equal(playAll.option, "replace");
+assert.equal(playAll.shuffle, false);
+assert.equal(playAll.queue_id, "player.room");
+assert.equal("start_item" in playAll, false);
+
+const oneTrack = rewritePlayAllArgs(
+  { media: "library://track/1", option: null },
+  ["library://track/1"],
+);
+assert.deepEqual(oneTrack.media, ["library://track/1"]);
+assert.equal(oneTrack.option, "replace");
+assert.equal(oneTrack.shuffle, false);
+
+assert.equal(
+  rewritePlayAllArgs({ media: { uri: "library://track/9" }, option: "play" }, chartUris),
+  null,
+);
+assert.equal(rewritePlayAllArgs({ media: { uri: "library://track/2" } }, null), null);
+assert.equal(rewritePlayAllArgs(null, chartUris), null);
+assert.equal(rewritePlayAllArgs({ media: { uri: "library://track/1" } }, []), null);
 
 console.log("toptracks play script ok");

@@ -14,7 +14,8 @@
  * toolbar title "Top tracks" (the subtitle "On <provider>" is separate). The
  * account can save that section collapsed, which leaves the heading on screen
  * and does not draw the rows. Play all stays on the heading in that case.
- * Clicking it opens the section and queues the chart from the first track.
+ * Clicking it opens the section and replaces the current queue with the
+ * chart, the way an album play does.
  *
  * Each track is a v-list-item. Vuetify wraps the title slot in
  * .v-list-item-title, and the name is the first text of the inner
@@ -123,19 +124,46 @@
     return null;
   }
 
+  function copyPlayArgs(args) {
+    var next = {};
+    if (!args) return next;
+    for (var key in args) {
+      if (Object.prototype.hasOwnProperty.call(args, key)) next[key] = args[key];
+    }
+    return next;
+  }
+
   /**
    * Return play_media args that queue ``uris`` in order, or null to send the
    * original command. A single track is already what the app asked to play.
+   * The app's enqueue option is kept, so a track play still inserts.
    */
   function rewritePlayArgs(args, uris) {
     if (!args || !uris || uris.length < 2) return null;
     if (mediaUri(args.media) !== uris[0]) return null;
-    var next = {};
-    for (var key in args) {
-      if (Object.prototype.hasOwnProperty.call(args, key)) next[key] = args[key];
-    }
+    var next = copyPlayArgs(args);
     next.media = uris.slice();
     next.shuffle = false;
+    return next;
+  }
+
+  /**
+   * Play-all args. The chart replaces the queue, the way an album play does.
+   *
+   * A track play uses the track enqueue option (``play``), which inserts
+   * after the current item and keeps the rest of the queue. Album play uses
+   * ``replace``, which swaps the queue for the new items. Return null when
+   * this command is not that chart, so the app's command is sent unchanged.
+   */
+  function rewritePlayAllArgs(args, uris) {
+    if (!args || !uris || !uris.length) return null;
+    var uri = mediaUri(args.media);
+    if (!uri || uris.indexOf(uri) < 0) return null;
+    var next = copyPlayArgs(args);
+    next.media = uris.slice();
+    next.shuffle = false;
+    next.option = "replace";
+    delete next.start_item;
     return next;
   }
 
@@ -483,15 +511,6 @@
       });
     }
 
-    function copyArgs(args) {
-      var next = {};
-      if (!args) return next;
-      for (var key in args) {
-        if (Object.prototype.hasOwnProperty.call(args, key)) next[key] = args[key];
-      }
-      return next;
-    }
-
     function rewriteOutgoing(data) {
       var message = parseMessage(data);
       if (!message) return data;
@@ -503,14 +522,10 @@
       if (pending && Date.now() > pending.until) pending = null;
       if (message.command !== PLAY_MEDIA || !pending) return data;
       if (pending.fromStart) {
-        var uri = mediaUri(message.args && message.args.media);
-        if (!uri || pending.uris.indexOf(uri) < 0) return data;
-        var args = copyArgs(message.args);
-        args.media = pending.uris.slice();
-        args.shuffle = false;
-        delete args.start_item;
+        var replaced = rewritePlayAllArgs(message.args, pending.uris);
+        if (!replaced) return data;
         pending = null;
-        message.args = args;
+        message.args = replaced;
         return JSON.stringify(message);
       }
       var rewritten = rewritePlayArgs(message.args, pending.uris);
@@ -527,6 +542,7 @@
     createTopTracksSession: createTopTracksSession,
     mediaUri: mediaUri,
     rewritePlayArgs: rewritePlayArgs,
+    rewritePlayAllArgs: rewritePlayAllArgs,
     install: install,
     TOP_TRACKS: TOP_TRACKS,
     PLAY_MEDIA: PLAY_MEDIA,

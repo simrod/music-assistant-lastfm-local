@@ -277,8 +277,9 @@ class LastFmLocalProvider(MetadataProvider):
             )
             return False
         self.logger.info(
-            "Top Tracks play control is installed. Reload the web app, then Play all "
-            "or a track's play button queues the chart from that point."
+            "Top Tracks play control is installed. Reload the web app. "
+            "Play all replaces the current queue with the chart. "
+            "A track's play button queues the chart from that track."
         )
         return True
 

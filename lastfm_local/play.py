@@ -1,9 +1,10 @@
 """Install the Top Tracks play control into Music Assistant's web app.
 
-The artist page play button sends one track. Album play sends the album and
-a start track, and the queue continues from there. This module copies a small
-script into the bundled web app and references it from ``index.html`` so that
-button queues the chart instead. The script file itself is
+The artist page play button sends one track. Play all sends the chart with
+enqueue option ``replace``, the same option an album play uses, so the
+current queue is swapped for the chart. A track play still queues from that
+track. This module copies a small script into the bundled web app and
+references it from ``index.html``. The script file itself is
 ``toptracks_play.js``. Nothing here imports Music Assistant.
 """
 

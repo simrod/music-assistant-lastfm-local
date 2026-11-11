@@ -19,7 +19,7 @@ For each call:
 
 ## Playing the chart
 
-On an artist page, **Play all** is the first control in the Top tracks heading. It queues the whole chart in chart order. The section can be collapsed; Play all opens it and then queues the chart. The play control on a track queues from that track through the end of the chart, including tracks that are not on screen. The track menu queues that one track. These chart plays turn shuffle off so the order stays the chart order.
+On an artist page, **Play all** is the first control in the Top tracks heading. It replaces the current queue with the whole chart, in chart order, the same way playing an album replaces the queue. The section can be collapsed; Play all opens it and then replaces the queue with the chart. The play control on a track queues from that track through the end of the chart, including tracks that are not on screen. The track menu queues that one track. These chart plays turn shuffle off so the order stays the chart order.
 
 The heading is the toolbar title "Top tracks". The script matches the names on screen to the chart the page loaded, in any order. A row of newest library tracks does not match, and it keeps the one-track play control.
 
